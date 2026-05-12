@@ -313,7 +313,7 @@ export default function LifeOS() {
       <div style={{ padding: "16px 20px 0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div>
           <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-            <span style={{ fontSize: 24, fontWeight: 700, color: T1, letterSpacing: "-0.5px" }}>LifeOS</span>
+            <span style={{ fontSize: 24, fontWeight: 700, color: T1, letterSpacing: "-0.5px" }}>Ansh's LifeOS</span>
             <span style={{ fontSize: 12, color: T3, background: BG2, padding: "2px 8px", borderRadius: 6, border: `1px solid ${BG3}` }}>Lv {level}</span>
             {syncing && <span style={{ fontSize: 11, color: T3 }}>syncing…</span>}
             {syncErr && <span style={{ fontSize: 11, color: "#f87171" }}>⚠ offline</span>}

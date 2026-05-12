@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { createClient } from '@supabase/supabase-js'
 import {
   LineChart,
   Line,
@@ -8,6 +9,17 @@ import {
   ResponsiveContainer,
   CartesianGrid,
 } from 'recharts'
+
+const supabaseUrl =
+  'https://xvzskblvseoamoxjaufl.supabase.co'
+
+const supabaseKey =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh2enNrYmx2c2VvYW1veGphdWZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1NDg1NjEsImV4cCI6MjA5NDEyNDU2MX0.qxygAr6zJW-O-1LnC8Qdk0wgsyXp3X7cQ3h-p87UHYk'
+
+const supabase = createClient(
+  supabaseUrl,
+  supabaseKey
+)
 
 const defaultTasks = [
   {
@@ -38,20 +50,31 @@ export default function LifeOSApp() {
 
   const today = new Date().toLocaleDateString()
 
-  useEffect(() => {
-    const savedTasks = localStorage.getItem('lifeos_tasks')
-    const savedHistory = localStorage.getItem('lifeos_history')
+useEffect(() => {
+  loadTasks()
+}, [])
 
-    if (savedTasks) {
-      setTasks(JSON.parse(savedTasks))
-    } else {
-      setTasks(defaultTasks)
-    }
+const loadTasks = async () => {
+  const { data, error } = await supabase
+    .from('tasks')
+    .select('*')
+    .order('id', { ascending: true })
 
-    if (savedHistory) {
-      setHistory(JSON.parse(savedHistory))
-    }
-  }, [])
+  if (error) {
+    console.error(error)
+    return
+  }
+
+  if (data.length === 0) {
+    await supabase
+      .from('tasks')
+      .insert(defaultTasks)
+
+    setTasks(defaultTasks)
+  } else {
+    setTasks(data)
+  }
+}
 
   useEffect(() => {
     localStorage.setItem('lifeos_tasks', JSON.stringify(tasks))
@@ -101,32 +124,55 @@ export default function LifeOSApp() {
     return history.filter((day) => day.completion >= 70).length
   }, [history])
 
-  const toggleTask = (id) => {
-    setTasks((prev) =>
-      prev.map((task) =>
-        task.id === id
-          ? { ...task, completed: !task.completed }
-          : task
-      )
-    )
+const toggleTask = async (id) => {
+  const updatedTasks = tasks.map((task) =>
+    task.id === id
+      ? {
+          ...task,
+          completed: !task.completed,
+        }
+      : task
+  )
+
+  setTasks(updatedTasks)
+
+  const updatedTask = updatedTasks.find(
+    (t) => t.id === id
+  )
+
+  await supabase
+    .from('tasks')
+    .update({
+      completed: updatedTask.completed,
+    })
+    .eq('id', id)
+}
+
+const addTask = async () => {
+  if (!taskName.trim()) return
+
+  const newTask = {
+    task: taskName,
+    category,
+    points: Number(points),
+    completed: false,
   }
 
-  const addTask = () => {
-    if (!taskName.trim()) return
+  const { data, error } = await supabase
+    .from('tasks')
+    .insert([newTask])
+    .select()
 
-    const newTask = {
-      id: Date.now(),
-      task: taskName,
-      category,
-      points: Number(points),
-      completed: false,
-    }
-
-    setTasks((prev) => [...prev, newTask])
-
-    setTaskName('')
-    setPoints(10)
+  if (error) {
+    console.error(error)
+    return
   }
+
+  setTasks((prev) => [...prev, ...data])
+
+  setTaskName('')
+  setPoints(10)
+}
 
   const startNewDay = () => {
     if (tasks.length > 0) {
